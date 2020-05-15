@@ -15,8 +15,10 @@ for ($i = 1; $i <= 10; $i++) {
 }
 
 // Get stats and print them
-$get_stats = new ProcessPosts;
-$stats = $get_stats->count_stats($all_posts);
+$process_posts = new ProcessPosts;
+$stats = $process_posts->count_stats($all_posts);
+
+print_r($stats);
 
 print_r('Time elapsed: ');
 print_r(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"].' seconds');

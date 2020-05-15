@@ -1,45 +1,30 @@
 <?php
 
 class ProcessPosts {
+    
+    private $timegroups = array(
+        'month' => 'mY',
+        'week'  => 'WY'
+    );
+
     function count_stats($posts) {
         // Get stats
-        $avg_char_lenght_per_month = $this->count_avg_char_lenght($posts);
-        $longest_post_per_month = $this->find_longest_post($posts);
-        $total_posts_per_week = $this->count_total_post($posts);
-        $avg_user_posts_per_month = $this->count_user_avg_post_number($posts);
-
-        // Print stats
-        print_r('Average character length of a post/month'."\n");
-        print_r($avg_char_lenght_per_month);
-        print_r("\n");
-
-        print_r('Longest post by character length/month'."\n");
-        print_r($longest_post_per_month);
-        print_r("\n");
-
-        print_r('Total posts split by week'."\n");
-        print_r($total_posts_per_week);
-        print_r("\n");
-
-        print_r('Average number of posts per user/month'."\n");
-        print_r($avg_user_posts_per_month);
-        print_r("\n");
+        $results = array(
+            'Average character length of a post/month'  => $this->count_avg_char_lenght($posts), 
+            'Longest post by character length/month'    => $this->find_longest_post($posts),
+            'Total posts split by week'                 => $this->count_total_post($posts),
+            'Average number of posts per user/month'    => $this->count_user_avg_post_number($posts)
+        );
+        return $results;
     }
 
     // Average character length of a post/month
     function count_avg_char_lenght($posts) {
         // Construct monthdata
-        $monthdata = array();
-        foreach ($posts as $key => $value) {
-            if (!array_key_exists(date('mY', strtotime($value->created_time)), $monthdata)) {
-                $monthdata[date('mY', strtotime($value->created_time))][] = $value;
-            } else {
-                array_push($monthdata[date('mY', strtotime($value->created_time))], $value);
-            }
-        }
+        $month_data = $this->construct_data($posts, 'month');
 
         // Count average
-        foreach ($monthdata as $posts) {
+        foreach ($month_data as $posts) {
             $lenghts = array();
             foreach ($posts as $post) {
                 $lenghts[] = strlen($post->message);
@@ -53,17 +38,10 @@ class ProcessPosts {
     // Longest post by character length/month
     function find_longest_post($posts) {
         // Construct monthdata
-        $monthdata = array();
-        foreach ($posts as $key => $value) {
-            if (!array_key_exists(date('mY', strtotime($value->created_time)), $monthdata)) {
-                $monthdata[date('mY', strtotime($value->created_time))][] = $value;
-            } else {
-                array_push($monthdata[date('mY', strtotime($value->created_time))], $value);
-            }
-        }
+        $month_data = $this->construct_data($posts, 'month');
 
         // Find longest
-        foreach ($monthdata as $posts) {
+        foreach ($month_data as $posts) {
             $lenght = 0;
             foreach ($posts as $post) {
                 if (strlen($post->message) > $lenght) {
@@ -79,17 +57,10 @@ class ProcessPosts {
     // Total posts split by week
     function count_total_post($posts) {
         // Construct weekdata
-        $weekdata = array();
-        foreach ($posts as $key => $value) {
-            if (!array_key_exists(date('WY', strtotime($value->created_time)), $weekdata)) {
-                $weekdata[date('WY', strtotime($value->created_time))][] = $value;
-            } else {
-                array_push($weekdata[date('WY', strtotime($value->created_time))], $value);
-            }
-        }
+        $week_data = $this->construct_data($posts, 'week');
 
         // Count total
-        foreach ($weekdata as $posts) {
+        foreach ($week_data as $posts) {
             $count = count(array_keys($posts));
             $week = date('WY', strtotime($posts[0]->created_time));
             $total[$week] = $count;
@@ -99,24 +70,43 @@ class ProcessPosts {
 
     // Average number of posts per user/month
     function count_user_avg_post_number($posts) {
-        // Construct monthdata
-        $userdata = array();
-        foreach ($posts as $key => $value) {
-            if (!array_key_exists(date('mY', strtotime($value->created_time)), $userdata) || !array_key_exists($value->from_id, $userdata)) {
-                $userdata[$value->from_id][date('mY', strtotime($value->created_time))][] = $value;
-            }
-        }
+        // Construct data by user
+        $userdata = $this->construct_data($posts, 'month', true);
 
         // Count average
         foreach ($userdata as $months) {
-            $postcount = 0;
-            $monthcount = count($months);
+            $post_count = 0;
+            $month_count = count($months);
             foreach ($months as $posts) {
                 $user_id = $posts[0]->from_id;
-                $postcount = $postcount + count($posts);
+                $post_count = $post_count + count($posts);
             }
-            $avg[$user_id] = round($postcount / $monthcount, 2);
+            $avg[$user_id] = round($post_count / $month_count, 2);
         }
         return $avg;
+    }
+
+    function construct_data($posts, $timegroup, $usergroup = false) {
+        // Search timekey
+        if (array_key_exists($timegroup, $this->timegroups)) {
+            $timekey = $this->timegroups[$timegroup];
+        } else {
+            throw new Exception('Timegroup is missing or invalid.');
+        }
+
+        // Construct data
+        $data = array();
+        foreach ($posts as $key => $value) {
+            if ($usergroup) {
+                if (!array_key_exists(date($timekey, strtotime($value->created_time)), $data) || !array_key_exists($value->from_id, $data)) {
+                    $data[$value->from_id][date($timekey, strtotime($value->created_time))][] = $value;
+                }
+            } else if (!array_key_exists(date($timekey, strtotime($value->created_time)), $data)) {
+                $data[date($timekey, strtotime($value->created_time))][] = $value;
+            } else {
+                array_push($data[date($timekey, strtotime($value->created_time))], $value);
+            }
+        }
+        return $data;
     }
 }
