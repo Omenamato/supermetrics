@@ -20,14 +20,14 @@ class ApiConnection extends ProcessPosts {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
 
-        $output = curl_exec($ch);
+        $output = json_decode(curl_exec($ch));
 
         if (curl_error($ch)) {
             throw new Exception('Curl error: ' . curl_error($ch));
         }
 
         curl_close($ch);
-        return json_decode($output);
+        return $output;
     }
 
     // Fetch posts
@@ -48,7 +48,7 @@ class ApiConnection extends ProcessPosts {
             if (curl_error($ch)) {
                 throw new Exception('Curl error: ' . curl_error($ch));
             }
-            
+
             $all_posts = (object) array_merge((array) $all_posts, (array) $output->data->posts);
         }
 
