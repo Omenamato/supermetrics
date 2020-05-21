@@ -8,7 +8,7 @@ class ProcessPosts {
     );
 
     function count_stats($posts) {
-        // Get stats
+        // Get stats and return them as array
         $results = array(
             'Average character length of a post/month'  => $this->count_avg_char_lenght($posts), 
             'Longest post by character length/month'    => $this->find_longest_post($posts),
@@ -86,6 +86,7 @@ class ProcessPosts {
         return $avg;
     }
 
+    // Construct data for easier processing
     function construct_data($posts, $timegroup, $usergroup = false) {
         // Search timekey
         if (array_key_exists($timegroup, $this->timegroups)) {
@@ -97,6 +98,7 @@ class ProcessPosts {
         // Construct data
         $data = array();
         foreach ($posts as $key => $value) {
+            // If usergroup = true, sort by user
             if ($usergroup) {
                 if (!array_key_exists(date($timekey, strtotime($value->created_time)), $data) || !array_key_exists($value->from_id, $data)) {
                     $data[$value->from_id][date($timekey, strtotime($value->created_time))][] = $value;

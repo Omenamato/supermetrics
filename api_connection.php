@@ -9,8 +9,8 @@ class ApiConnection extends ProcessPosts {
         $config = parse_ini_file('config.ini');
         $params = array(
             'client_id' => $config['client_id'],
-            'email' => $config['email'],
-            'name' => $config['name']
+            'email'     => $config['email'],
+            'name'      => $config['name']
         );
 
         $ch = curl_init();
@@ -27,26 +27,32 @@ class ApiConnection extends ProcessPosts {
         }
 
         curl_close($ch);
-        return $output;
+        return json_decode($output);
     }
 
     // Fetch posts
-    function fetch_posts($sl_token, $page) {
+    function fetch_posts($sl_token) {
         $config = parse_ini_file('config.ini');
-        $params = "sl_token=".urlencode($sl_token)."&page=".$page;
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, $config['posts_url'].'?'.$params);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $all_posts = new ArrayObject();
 
-        $output = curl_exec($ch);
+        for ($i = 1; $i <= 10; $i++) {
+            $params = "sl_token=".urlencode($sl_token)."&page=".$i;
+            curl_setopt($ch, CURLOPT_URL, $config['posts_url'].'?'.$params);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-        if (curl_error($ch)) {
-            throw new Exception('Curl error: ' . curl_error($ch));
+            $output = json_decode(curl_exec($ch));
+
+            if (curl_error($ch)) {
+                throw new Exception('Curl error: ' . curl_error($ch));
+            }
+            
+            $all_posts = (object) array_merge((array) $all_posts, (array) $output->data->posts);
         }
 
         curl_close($ch);
-        return $output;
+        return $all_posts;
     }
 }

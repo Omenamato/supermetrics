@@ -4,15 +4,11 @@ require_once('api_connection.php');
 
 // Connect to API
 $get_connection = new ApiConnection();
-$token = json_decode($get_connection->register_token());
-
-$all_posts = new stdClass();
+$token = $get_connection->register_token();
 
 // Get posts from API and put them to object
-for ($i = 1; $i <= 10; $i++) {
-    $post_data = json_decode($get_connection->fetch_posts($token->data->sl_token, $i));
-    $all_posts = (object) array_merge((array) $all_posts, (array) $post_data->data->posts);
-}
+$all_posts = new ArrayObject();
+$all_posts = $get_connection->fetch_posts($token->data->sl_token);
 
 // Get stats and print them
 $process_posts = new ProcessPosts;
